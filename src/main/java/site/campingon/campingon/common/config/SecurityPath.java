@@ -12,7 +12,9 @@ public class SecurityPath {
         "/api/mongo/camps/search",
         "/api/mongo/camps/autocomplete",
         "/api/camps/*/available",
-        "/api/camps/*"
+        "/api/camps/*",
+        "/api/camps/*/reviews",  // 캠핑장 Id로 리뷰 목록 조회
+        "/api/camps/reviews/*"
     };
 
 
@@ -28,9 +30,7 @@ public class SecurityPath {
         "/api/keywords",
         "/api/keywords/me",
         "/api/camps/bookmarked",
-        "/api/camps/reviews/*",
-        "/api/camps/*/reviews",
-        "/api/camps/*/reviews/*"
+        "/api/camps/*/reviews/*"  // 리뷰 생성
     };
 
     // hasRole("ADMIN")
