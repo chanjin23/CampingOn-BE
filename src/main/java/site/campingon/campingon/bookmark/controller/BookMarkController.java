@@ -21,7 +21,11 @@ public class BookMarkController {
       @PathVariable("campId") Long campId,
       @AuthenticationPrincipal CustomUserDetails customUserDetails
   ) {
+    long startTime = System.currentTimeMillis(); // 시작 시간
     bookmarkService.bookmarkCamp(campId, customUserDetails.getId());
+    long endTime = System.currentTimeMillis();
+
+    log.info("실행 시간: " + (endTime - startTime) + " ms");
     return ResponseEntity.ok().build();
   }
 }

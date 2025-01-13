@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.web.client.RestTemplate;
 import site.campingon.campingon.camp.repository.*;
 import site.campingon.campingon.common.public_data.GoCampingPath;
@@ -50,7 +51,7 @@ class GoCampingServiceTest {
     @Mock
     private CampIndutyRepository campIndutyRepository;
 
-    @Spy
+    @Mock
     private RestTemplate restTemplate;
 
 
@@ -65,6 +66,8 @@ class GoCampingServiceTest {
         //given
         String numOfRows = "1";
         String pageNo = "1";
+
+        URI mockUri = new URI("http://example.com"); // 반환할 실제 URI 객체 생성
 
         // Item 객체 생성
         GoCampingDataDto.Item item = GoCampingDataDto.Item.builder()
@@ -98,10 +101,10 @@ class GoCampingServiceTest {
                 )
                 .build();
         System.out.println("goCampingDataDto :" + goCampingDataDto);
+        when(goCampingProviderService.createUri(any(GoCampingPath.class),anyString(), anyString(), anyString(), anyString())).thenReturn(mockUri);
 
-        doReturn(goCampingDataDto).when(restTemplate).getForObject(any(URI.class), eq(GoCampingDataDto.class));
+        doReturn(goCampingDataDto).when(restTemplate).getForObject(eq(mockUri), eq(GoCampingDataDto.class));
 
-        //when
         GoCampingDataDto result = goCampingService.fetchCampData(GoCampingPath.BASED_LIST, "numOfRows", numOfRows, "pageNo", pageNo);
 
         // then
