@@ -12,10 +12,8 @@ import site.campingon.campingon.camp.entity.Camp;
 import site.campingon.campingon.camp.mapper.CampMapper;
 import site.campingon.campingon.camp.repository.CampRepository;
 import site.campingon.campingon.bookmark.repository.BookmarkRepository;
-import site.campingon.campingon.camp.repository.mongodb.MongoSearchClient;
 import site.campingon.campingon.common.exception.ErrorCode;
 import site.campingon.campingon.common.exception.GlobalException;
-import site.campingon.campingon.user.repository.UserKeywordRepository;
 
 import java.util.Collections;
 import java.util.List;
@@ -62,7 +60,7 @@ public class CampService {
 
   // 사용자의 찜한 캠핑장 목록 조회
   public Page<CampListResponseDto> getBookmarkedCamps(Long userId, Pageable pageable) {
-    Page<Camp> bookmarkedCamps = campRepository.findByBookmarks_User_Id(userId, pageable);
+    Page<Camp> bookmarkedCamps = campRepository.findByBookmarksUserId(userId, pageable);
 
     List<CampListResponseDto> campDtos = bookmarkedCamps.getContent().stream()
         .map(camp -> {
