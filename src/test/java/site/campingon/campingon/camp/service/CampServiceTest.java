@@ -295,7 +295,7 @@ class CampServiceTest {
     List<Camp> camps = Arrays.asList(mockCamp);
     Page<Camp> campPage = new PageImpl<>(camps, pageable, camps.size());
 
-    when(campRepository.findByBookmarks_User_Id(userId, pageable))
+    when(campRepository.findByBookmarksUserId(userId, pageable))
         .thenReturn(campPage);
     when(campMapper.toCampListDto(any(Camp.class))).thenReturn(mockCampListDto);
 
@@ -307,7 +307,7 @@ class CampServiceTest {
     assertEquals(1, result.getTotalElements());
     assertTrue(result.getContent().get(0).isMarked());
 
-    verify(campRepository).findByBookmarks_User_Id(userId, pageable);
+    verify(campRepository).findByBookmarksUserId(userId, pageable);
     verify(campMapper).toCampListDto(any(Camp.class));
   }
 
@@ -319,7 +319,7 @@ class CampServiceTest {
     Pageable pageable = PageRequest.of(0, 3);
     Page<Camp> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
 
-    when(campRepository.findByBookmarks_User_Id(userId, pageable))
+    when(campRepository.findByBookmarksUserId(userId, pageable))
         .thenReturn(emptyPage);
 
     // when
@@ -328,7 +328,7 @@ class CampServiceTest {
     // then
     assertTrue(result.isEmpty());
     assertEquals(0, result.getTotalElements());
-    verify(campRepository).findByBookmarks_User_Id(userId, pageable);
+    verify(campRepository).findByBookmarksUserId(userId, pageable);
   }
 
   // 캠핑장 관리자 테스트 CRUD
