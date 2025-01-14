@@ -20,10 +20,8 @@ public interface CampRepository extends JpaRepository<Camp, Long> {
     SELECT c FROM Camp c
     JOIN FETCH c.campInfo ci
     JOIN FETCH c.campAddr
-    ORDER BY ci.recommendCnt DESC
-    """, countQuery = """
-    SELECT COUNT(c) FROM Camp c
-    """
+    ORDER BY ci.recommendCnt DESC, c.thumbImage DESC
+    """, countQuery = "SELECT COUNT(c) FROM Camp c"
   )
   Page<Camp> findPopularCamps(Pageable pageable);
 
