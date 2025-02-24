@@ -2,8 +2,7 @@ package site.campingon.campingon.camp.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.LazyToOne;
-import org.hibernate.annotations.LazyToOneOption;
+import org.hibernate.annotations.BatchSize;
 import site.campingon.campingon.bookmark.entity.Bookmark;
 import site.campingon.campingon.common.public_data.dto.GoCampingParsedResponseDto;
 
@@ -55,6 +54,7 @@ public class Camp{
   @Column(name = "animal_admission", length = 50)
   private String animalAdmission;
 
+  @BatchSize(size = 10) //9개의 데이터만 가지고 올것이므로 10개만 선택
   @OneToMany(mappedBy = "camp", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<CampKeyword> keywords=new ArrayList<>();
