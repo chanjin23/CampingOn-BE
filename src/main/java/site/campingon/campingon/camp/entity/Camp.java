@@ -17,11 +17,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(
-        name = "camp",
+        name = "camp"/*,
         indexes = {
                 @Index(name = "idx_camp_id", columnList = "id"),
                 @Index(name = "idx_camp_name", columnList = "camp_name")
-        }
+        }*/
 )
 public class Camp{
 
