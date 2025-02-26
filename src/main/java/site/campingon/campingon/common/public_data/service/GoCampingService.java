@@ -27,11 +27,12 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static site.campingon.campingon.camp.entity.Induty.*;
 import static site.campingon.campingon.common.exception.ErrorCode.*;
+import static site.campingon.campingon.common.public_data.repository.GoCampingUpsertSQLConstants.INSERT_MODE;
+import static site.campingon.campingon.common.public_data.repository.GoCampingUpsertSQLConstants.UPDATE_MODE;
 
 @Service
 @RequiredArgsConstructor
@@ -299,8 +300,7 @@ public class GoCampingService {
 
     public void insertCampDataByJdbc(GoCampingDataDto goCampingDataDto) {
         List<GoCampingParsedResponseDto> goCampingParsedResponseDtoList = parseGoCampingData(goCampingDataDto);
-        List<GoCampingParsedResponseDto> notExistDataDtoDB; //DB에 없는 데이터
-        List<GoCampingParsedResponseDto> existDataDtoFromDB;    //DB에 있는 데이터
+
         //1. 모든 DTO에서 content ID 추출
         List<Long> campIdList = goCampingParsedResponseDtoList.stream()
                 .map(GoCampingParsedResponseDto::getContentId)
@@ -310,45 +310,43 @@ public class GoCampingService {
         List<Long> existingIds = campRepository.existData(campIdList);
 
         //3. 존재하는 ID와 존재하지 않는 ID 필터링
-        notExistDataDtoDB = goCampingParsedResponseDtoList.stream()
+        List<GoCampingParsedResponseDto> notExistDataDtoDB = goCampingParsedResponseDtoList.stream()
                 .filter(dto -> !existingIds.contains(dto.getContentId()))
-                .toList();
+                .toList();  //DB에 존재하지 않는 데이터
 
-        existDataDtoFromDB = goCampingParsedResponseDtoList.stream()
-                .filter(dto -> !existingIds.contains(dto.getContentId()))
-                .toList();
+        List<GoCampingParsedResponseDto> existDataDtoFromDB = goCampingParsedResponseDtoList.stream()
+                .filter(dto -> existingIds.contains(dto.getContentId()))
+                .toList();  //DB에 이미 존재하는 데이터
 
         //4. 존재하지 않는 ID는 INSERT 하기
 
-        goCampingRepository.bulkInsertCamp(notExistDataDtoDB);
+        if (!notExistDataDtoDB.isEmpty()) {
+            goCampingRepository.bulkUpsertCamp(notExistDataDtoDB, INSERT_MODE);
 
-        goCampingRepository.bulkInsertCampInfo(notExistDataDtoDB);
+            goCampingRepository.bulkUpsertCampInfo(notExistDataDtoDB, INSERT_MODE);
 
-        goCampingRepository.bulkInsertCampInduty(notExistDataDtoDB);    //바로 insert
+            goCampingRepository.bulkInsertCampInduty(notExistDataDtoDB);    //바로 insert
 
-        goCampingRepository.bulkInsertCampAddr(notExistDataDtoDB);
+            goCampingRepository.bulkUpsertCampAddr(notExistDataDtoDB, INSERT_MODE);
 
-        goCampingRepository.bulkInsertCampSite(notExistDataDtoDB);
+            goCampingRepository.bulkUpsertCampSite(notExistDataDtoDB, INSERT_MODE);
+        }
 
         //5. 존재하는 ID는 UPDATE 하기
 
         if (!existDataDtoFromDB.isEmpty()) {
-//            goCampingRepository.bulkUpdateCamp(existDataDtoFromDB);
-//
-//            goCampingRepository.bulkUpdateCampInfo(existDataDtoFromDB);
-//
-//            //데이터 삭제 후 다시 insert
-//            goCampingRepository.bulkDeleteCampInduty(existDataDtoFromDB);
-//            goCampingRepository.bulkInsertCampInduty(existDataDtoFromDB);
-//
-//            goCampingRepository.bulkUpdateCampAddr(existDataDtoFromDB);
-//
-//            goCampingRepository.bulkUpdateCampSite(existDataDtoFromDB);
+            goCampingRepository.bulkUpsertCamp(existDataDtoFromDB, UPDATE_MODE);
+
+            goCampingRepository.bulkUpsertCampInfo(existDataDtoFromDB, UPDATE_MODE);
+
+            //데이터 삭제 후 다시 insert
+            goCampingRepository.bulkDeleteCampInduty(existDataDtoFromDB);
+            goCampingRepository.bulkInsertCampInduty(existDataDtoFromDB);
+
+            goCampingRepository.bulkUpsertCampAddr(existDataDtoFromDB, UPDATE_MODE);
+
+            goCampingRepository.bulkUpsertCampSite(existDataDtoFromDB, UPDATE_MODE);
         }
-
-
-        //campInduty 는 update시 삭제했다가 다시 insert
-
     }
 
     public void insertCampDataByJpa(GoCampingDataDto goCampingDataDto) {

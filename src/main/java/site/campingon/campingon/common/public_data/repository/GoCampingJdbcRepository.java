@@ -10,6 +10,7 @@ import javax.sql.DataSource;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -25,13 +26,18 @@ public class GoCampingJdbcRepository {
     /**
      * camp
      * */
-    public void bulkInsertCamp(List<GoCampingParsedResponseDto> responseDtoList) {
+    public void bulkUpsertCamp(List<GoCampingParsedResponseDto> responseDtoList, String crud) {
+        String sql = "";
 
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false); // 트랜잭션 시작
 
             int cnt = 0;
-            try (PreparedStatement ps = connection.prepareStatement(INSERT_CAMP_SQL)) {
+
+            if(crud.equals(INSERT_MODE)) sql = INSERT_CAMP_SQL;
+            else sql = UPDATE_CAMP_SQL;
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
                 for (GoCampingParsedResponseDto response : responseDtoList) {
                     ps.setObject(1, LocalDateTime.parse(
                             response.getCreatedtime()
@@ -60,7 +66,8 @@ public class GoCampingJdbcRepository {
                 ps.executeBatch();
 
                 connection.commit(); // 트랜잭션 성공 시 커밋
-                log.info("총 {}개의 camp 데이터가 삽입되었습니다.", cnt);
+                if(crud.equals(INSERT_MODE)) log.info("총 {}개의 camp 데이터가 삽입되었습니다.", cnt);
+                else log.info("총 {}개의 camp 데이터가 업데이트되었습니다.", cnt);
             } catch (SQLException e) {
                 connection.rollback(); // 실패 시 롤백
                 throw new RuntimeException("Batch insert failed", e);
@@ -73,12 +80,17 @@ public class GoCampingJdbcRepository {
 
     /**
      * campInfo*/
-    public void bulkInsertCampInfo(List<GoCampingParsedResponseDto> responseDtoList) {
+    public void bulkUpsertCampInfo(List<GoCampingParsedResponseDto> responseDtoList, String crud) {
+        String sql = "";
+
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false); // 트랜잭션 시작
 
             int cnt = 0;
-            try (PreparedStatement ps = connection.prepareStatement(INSERT_CAMP_INFO_SQL)) {
+            if(crud.equals(INSERT_MODE)) sql = INSERT_CAMP_INFO_SQL;
+            else sql = UPDATE_CAMP_INFO_SQL;
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
                 for (GoCampingParsedResponseDto data : responseDtoList) {
                     ps.setInt(1, 0); //recommend_cnt
                     ps.setInt(2, 0);//bookmark_cnt
@@ -94,7 +106,8 @@ public class GoCampingJdbcRepository {
                 ps.executeBatch();
 
                 connection.commit(); // 트랜잭션 성공 시 커밋
-                log.info("총 {}개의 camp_info 데이터가 삽입되었습니다.", cnt);
+                if(crud.equals(INSERT_MODE)) log.info("총 {}개의 camp_info 데이터가 삽입되었습니다.", cnt);
+                else log.info("총 {}개의 camp_info 데이터가 업데이트되었습니다.", cnt);
             } catch (SQLException e) {
                 connection.rollback(); // 실패 시 롤백
                 throw new RuntimeException("Batch insert failed", e);
@@ -146,21 +159,64 @@ public class GoCampingJdbcRepository {
         }
     }
 
-    /**
-     * campAddr*/
-    public void bulkInsertCampAddr(List<GoCampingParsedResponseDto> responseDtoList) {
+    public void bulkDeleteCampInduty(List<GoCampingParsedResponseDto> responseDtoList) {
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false); // 트랜잭션 시작
 
-            try (PreparedStatement ps = connection.prepareStatement(INSERT_CAMP_ADDR_SQL)) {
+            try (PreparedStatement ps = connection.prepareStatement(DELETE_CAMP_INDUTY_SQL)) {
+                int count = 0;
+
                 for (GoCampingParsedResponseDto data : responseDtoList) {
-                    ps.setLong(1, data.getContentId());   // camp_id
-                    ps.setString(2, data.getDoNm());   // city
-                    ps.setString(3, data.getSigunguNm());  // state
-                    ps.setString(4, data.getZipcode()); // zipcode
-                    ps.setString(5, data.getAddr1()); // street_addr
-                    ps.setString(6, data.getAddr2()); // detailed_addr
-                    ps.setString(7, "POINT(" + data.getMapY() + " " + data.getMapX() + ")"); // location (WKT 형식)
+                    ps.setLong(1, data.getContentId());
+                    ps.addBatch();
+                    count++;
+
+                    // 메모리 절약을 위해 일정 개수마다 실행
+                    if (count % 1000 == 0) {
+                        ps.executeBatch();
+                        ps.clearBatch();
+                    }
+                }
+
+                // 남은 배치 실행
+                int[] row = ps.executeBatch();
+                connection.commit(); // 트랜잭션 커밋
+                log.info("총 {}개 camp_id의 camp_induty 데이터가 삭제되었습니다.", Arrays.stream(row).sum());
+
+            } catch (SQLException e) {
+                connection.rollback(); // 실패 시 롤백
+                log.error("캠핑업종 삭제 중 오류 발생: {}", e.getMessage());
+                throw new RuntimeException("Batch delete failed", e);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Database connection failed", e);
+        }
+    }
+
+
+    /**
+     * campAddr*/
+    public void bulkUpsertCampAddr(List<GoCampingParsedResponseDto> responseDtoList, String crud) {
+        String sql = "";
+
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false); // 트랜잭션 시작
+
+            if(crud.equals(INSERT_MODE)) sql = INSERT_CAMP_ADDR_SQL;
+            else sql = UPDATE_CAMP_ADDR_SQL;
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                for (GoCampingParsedResponseDto data : responseDtoList) {
+                    String pointWKT = String.format("POINT(%.6f %.6f)", data.getMapY(), data.getMapX());
+
+                    ps.setString(1, data.getDoNm());   // city
+                    ps.setString(2, data.getSigunguNm());  // state
+                    ps.setString(3, data.getZipcode()); // zipcode
+                    ps.setString(4, data.getAddr1()); // street_addr
+                    ps.setString(5, data.getAddr2()); // detailed_addr
+                    ps.setString(6, pointWKT); // location (WKT 형식) -> '' 표시가 될수있으므로 Object 설정
+                    ps.setLong(7, data.getContentId());   // camp_id
 
                     ps.addBatch(); // 배치 추가
                 }
@@ -168,7 +224,8 @@ public class GoCampingJdbcRepository {
                 int[] row = ps.executeBatch();
 
                 connection.commit(); // 트랜잭션 성공 시 커밋
-                log.info("총 {}개의 camp_addr 데이터가 삽입되었습니다.", row.length);
+                if(crud.equals(INSERT_MODE)) log.info("총 {}개의 camp_addr 데이터가 삽입되었습니다.", row.length);
+                else log.info("총 {}개의 camp_addr 데이터가 업데이트되었습니다.", row.length);
             } catch (SQLException e) {
                 connection.rollback(); // 실패 시 롤백
                 throw new RuntimeException("Batch insert failed", e);
@@ -181,69 +238,75 @@ public class GoCampingJdbcRepository {
 
     /**
      * campSite*/
-    public void bulkInsertCampSite(List<GoCampingParsedResponseDto> responseDtoList) {
+    public void bulkUpsertCampSite(List<GoCampingParsedResponseDto> responseDtoList, String crud) {
+        String sql = "";
+
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false); // 트랜잭션 시작
             int cnt = 0;
             int dataCnt = 0;
-            try (PreparedStatement ps = connection.prepareStatement(INSERT_CAMP_SITE_SQL)) {
+
+            if(crud.equals(INSERT_MODE)) sql = INSERT_CAMP_SITE_SQL;
+            else sql = UPDATE_CAMP_SITE_SQL;
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
                 for (GoCampingParsedResponseDto data : responseDtoList) {
                     //일반
                     for (int i = 0; i < data.getGnrlSiteCo(); ++i) {
-                        ps.setLong(1, data.getContentId());   // camp_id
-                        ps.setInt(2, NORMAL_SITE.getMaximumPeople());   // maximum_people
-                        ps.setInt(3, NORMAL_SITE.getPrice());  // price
-                        ps.setString(4, NORMAL_SITE.getType()); // site_type
-                        ps.setString(5, null); // indoor_facility
-                        ps.setBoolean(6, true); // is_available
+                        ps.setInt(1, NORMAL_SITE.getMaximumPeople());   // maximum_people
+                        ps.setInt(2, NORMAL_SITE.getPrice());  // price
+                        ps.setString(3, NORMAL_SITE.getType()); // site_type
+                        ps.setString(4, null); // indoor_facility
+                        ps.setBoolean(5, true); // is_available
+                        ps.setLong(6, data.getContentId());   // camp_id
                         ps.addBatch(); // 배치 추가
                         cnt++;
                         dataCnt++;
                     }
                     //자동차
                     for (int i = 0; i < data.getGnrlSiteCo(); ++i) {
-                        ps.setLong(1, data.getContentId());   // camp_id
-                        ps.setInt(2, CAR_SITE.getMaximumPeople());   // maximum_people
-                        ps.setInt(3, CAR_SITE.getPrice());  // price
-                        ps.setString(4, CAR_SITE.getType()); // site_type
-                        ps.setString(5, null); // indoor_facility
-                        ps.setBoolean(6, true); // is_available
+                        ps.setInt(1, CAR_SITE.getMaximumPeople());   // maximum_people
+                        ps.setInt(2, CAR_SITE.getPrice());  // price
+                        ps.setString(3, CAR_SITE.getType()); // site_type
+                        ps.setString(4, null); // indoor_facility
+                        ps.setBoolean(5, true); // is_available
+                        ps.setLong(6, data.getContentId());   // camp_id
                         ps.addBatch(); // 배치 추가
                         cnt++;
                         dataCnt++;
                     }
                     //글램핑
                     for (int i = 0; i < data.getGlampSiteCo(); ++i) {
-                        ps.setLong(1, data.getContentId());   // camp_id
-                        ps.setInt(2, GLAMP_SITE.getMaximumPeople());   // maximum_people
-                        ps.setInt(3, GLAMP_SITE.getPrice());  // price
-                        ps.setString(4, GLAMP_SITE.getType()); // site_type
-                        ps.setString(5, data.getGlampInnerFclty()); // indoor_facility
-                        ps.setBoolean(6, true); // is_available
+                        ps.setInt(1, GLAMP_SITE.getMaximumPeople());   // maximum_people
+                        ps.setInt(2, GLAMP_SITE.getPrice());  // price
+                        ps.setString(3, GLAMP_SITE.getType()); // site_type
+                        ps.setString(4, data.getGlampInnerFclty()); // indoor_facility
+                        ps.setBoolean(5, true); // is_available
+                        ps.setLong(6, data.getContentId());   // camp_id
                         ps.addBatch(); // 배치 추가
                         cnt++;
                         dataCnt++;
                     }
                     //카라반
                     for (int i = 0; i < data.getCaravSiteCo(); ++i) {
-                        ps.setLong(1, data.getContentId());   // camp_id
-                        ps.setInt(2, CARAV_SITE.getMaximumPeople());   // maximum_people
-                        ps.setInt(3, CARAV_SITE.getPrice());  // price
-                        ps.setString(4, CARAV_SITE.getType()); // site_type
-                        ps.setString(5, data.getCaravInnerFclty()); // indoor_facility
-                        ps.setBoolean(6, true); // is_available
+                        ps.setInt(1, CARAV_SITE.getMaximumPeople());   // maximum_people
+                        ps.setInt(2, CARAV_SITE.getPrice());  // price
+                        ps.setString(3, CARAV_SITE.getType()); // site_type
+                        ps.setString(4, data.getCaravInnerFclty()); // indoor_facility
+                        ps.setBoolean(5, true); // is_available
+                        ps.setLong(6, data.getContentId());   // camp_id
                         ps.addBatch(); // 배치 추가
                         cnt++;
                         dataCnt++;
                     }
                     //개인 카라반
                     for (int i = 0; i < data.getIndvdlCaravSiteCo(); ++i) {
-                        ps.setLong(1, data.getContentId());   // camp_id
-                        ps.setInt(2, PERSONAL_CARAV_SITE.getMaximumPeople());   // maximum_people
-                        ps.setInt(3, PERSONAL_CARAV_SITE.getPrice());  // price
-                        ps.setString(4, PERSONAL_CARAV_SITE.getType()); // site_type
-                        ps.setString(5, null); // indoor_facility
-                        ps.setBoolean(6, true); // is_available
+                        ps.setInt(1, PERSONAL_CARAV_SITE.getMaximumPeople());   // maximum_people
+                        ps.setInt(2, PERSONAL_CARAV_SITE.getPrice());  // price
+                        ps.setString(3, PERSONAL_CARAV_SITE.getType()); // site_type
+                        ps.setString(4, null); // indoor_facility
+                        ps.setBoolean(5, true); // is_available
+                        ps.setLong(6, data.getContentId());   // camp_id
                         ps.addBatch(); // 배치 추가
                         cnt++;
                         dataCnt++;
@@ -258,7 +321,8 @@ public class GoCampingJdbcRepository {
                 ps.executeBatch();
 
                 connection.commit(); // 트랜잭션 성공 시 커밋
-                log.info("총 {}개의 camp_site 데이터가 삽입되었습니다.", dataCnt);
+                if(crud.equals(INSERT_MODE)) log.info("총 {}개의 camp_site 데이터가 삽입되었습니다.", dataCnt);
+                else log.info("총 {}개의 camp_site 데이터가 업데이트되었습니다.", dataCnt);
             } catch (SQLException e) {
                 connection.rollback(); // 실패 시 롤백
                 throw new RuntimeException("Batch insert failed", e);
