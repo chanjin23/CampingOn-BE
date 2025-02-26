@@ -19,6 +19,7 @@ import site.campingon.campingon.common.public_data.dto.GoCampingImageDto;
 import site.campingon.campingon.common.public_data.dto.GoCampingImageParsedResponseDto;
 import site.campingon.campingon.common.public_data.dto.GoCampingParsedResponseDto;
 import site.campingon.campingon.common.public_data.mapper.GoCampingMapper;
+import site.campingon.campingon.common.public_data.repository.GoCampingJdbcRepository;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -26,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static site.campingon.campingon.camp.entity.Induty.*;
@@ -43,12 +45,13 @@ public class GoCampingService {
     private final CampRepository campRepository;
     private final RestTemplate restTemplate;
     private final GoCampingProviderService goCampingProviderService;
+    private final GoCampingJdbcRepository goCampingRepository;
     private static final String IMAGE_PAGE_NO = "1";    //이미지 몇번부터 값 꺼내올지
 
     //Camp 관련 엔티티 생성 및 DB 저장 메서드
     @Transactional
     public List<GoCampingParsedResponseDto> upsertCampData(GoCampingDataDto goCampingDataDto) {
-        if(goCampingDataDto.getResponse()==null) return null; //값이 없다면 null
+        if (goCampingDataDto.getResponse() == null) return null; //값이 없다면 null
 
         List<GoCampingParsedResponseDto> goCampingParsedResponseDtoList = parseGoCampingData(goCampingDataDto);
 
@@ -93,7 +96,7 @@ public class GoCampingService {
                         GLAMP_SITE.getMaximumPeople(), GLAMP_SITE.getPrice());
 
                 goCampingProviderService.updateCampSite(updateCamp, caravSiteCnt, CARAV_SITE, caravInnerFacility,
-                        CAR_SITE.getMaximumPeople(), CAR_SITE.getPrice());
+                        CARAV_SITE.getMaximumPeople(), CARAV_SITE.getPrice());
 
                 goCampingProviderService.updateCampSite(updateCamp, personalCaravanSiteCnt, PERSONAL_CARAV_SITE,
                         null, PERSONAL_CARAV_SITE.getMaximumPeople(), PERSONAL_CARAV_SITE.getPrice());
@@ -128,7 +131,7 @@ public class GoCampingService {
                         GLAMP_SITE.getMaximumPeople(), GLAMP_SITE.getPrice());
 
                 goCampingProviderService.createCampSite(createCamp, caravSiteCnt, CARAV_SITE, caravInnerFacility,
-                        CAR_SITE.getMaximumPeople(), CAR_SITE.getPrice());
+                        CARAV_SITE.getMaximumPeople(), CARAV_SITE.getPrice());
 
                 goCampingProviderService.createCampSite(createCamp, personalCaravanSiteCnt, PERSONAL_CARAV_SITE,
                         null, PERSONAL_CARAV_SITE.getMaximumPeople(), PERSONAL_CARAV_SITE.getPrice());
@@ -144,7 +147,7 @@ public class GoCampingService {
         List<List<GoCampingImageParsedResponseDto>> goCampingImageParsedResponseDtoList = new ArrayList<>();
 
         for (GoCampingImageDto goCampingDataDto : goCampingImageDto) {
-            if(goCampingDataDto.getResponse()==null) continue;  //image 데이터가 없다면 건너뛰기
+            if (goCampingDataDto.getResponse() == null) continue;  //image 데이터가 없다면 건너뛰기
 
             List<GoCampingImageDto.Item> item
                     = goCampingDataDto.getResponse().getBody().getItems().getItem();
@@ -292,5 +295,95 @@ public class GoCampingService {
 
     public List<Long> findCampIdByCity(String city) {
         return campAddrRepository.findCampIdsByCity(city);
+    }
+
+    public void insertCampDataByJdbc(GoCampingDataDto goCampingDataDto) {
+        List<GoCampingParsedResponseDto> goCampingParsedResponseDtoList = parseGoCampingData(goCampingDataDto);
+        List<GoCampingParsedResponseDto> notExistDataDtoDB; //DB에 없는 데이터
+        List<GoCampingParsedResponseDto> existDataDtoFromDB;    //DB에 있는 데이터
+        //1. 모든 DTO에서 content ID 추출
+        List<Long> campIdList = goCampingParsedResponseDtoList.stream()
+                .map(GoCampingParsedResponseDto::getContentId)
+                .toList();
+
+        //2. 한번의 쿼리로 이미 존재하는 contentId 조회
+        List<Long> existingIds = campRepository.existData(campIdList);
+
+        //3. 존재하는 ID와 존재하지 않는 ID 필터링
+        notExistDataDtoDB = goCampingParsedResponseDtoList.stream()
+                .filter(dto -> !existingIds.contains(dto.getContentId()))
+                .toList();
+
+        existDataDtoFromDB = goCampingParsedResponseDtoList.stream()
+                .filter(dto -> !existingIds.contains(dto.getContentId()))
+                .toList();
+
+        //4. 존재하지 않는 ID는 INSERT 하기
+
+        goCampingRepository.bulkInsertCamp(notExistDataDtoDB);
+
+        goCampingRepository.bulkInsertCampInfo(notExistDataDtoDB);
+
+        goCampingRepository.bulkInsertCampInduty(notExistDataDtoDB);    //바로 insert
+
+        goCampingRepository.bulkInsertCampAddr(notExistDataDtoDB);
+
+        goCampingRepository.bulkInsertCampSite(notExistDataDtoDB);
+
+        //5. 존재하는 ID는 UPDATE 하기
+
+        if (!existDataDtoFromDB.isEmpty()) {
+//            goCampingRepository.bulkUpdateCamp(existDataDtoFromDB);
+//
+//            goCampingRepository.bulkUpdateCampInfo(existDataDtoFromDB);
+//
+//            //데이터 삭제 후 다시 insert
+//            goCampingRepository.bulkDeleteCampInduty(existDataDtoFromDB);
+//            goCampingRepository.bulkInsertCampInduty(existDataDtoFromDB);
+//
+//            goCampingRepository.bulkUpdateCampAddr(existDataDtoFromDB);
+//
+//            goCampingRepository.bulkUpdateCampSite(existDataDtoFromDB);
+        }
+
+
+        //campInduty 는 update시 삭제했다가 다시 insert
+
+    }
+
+    public void insertCampDataByJpa(GoCampingDataDto goCampingDataDto) {
+        List<GoCampingParsedResponseDto> goCampingParsedResponseDtoList = parseGoCampingData(goCampingDataDto);
+        List<Camp> list = goCampingParsedResponseDtoList.stream()
+                .map(data -> Camp.builder()
+                        .id(data.getContentId())
+                        .campName(data.getFacltNm())
+                        .lineIntro(data.getLineIntro())
+                        .intro(data.getIntro())
+                        .tel(data.getTel())
+                        .homepage(data.getHomepage())
+                        .outdoorFacility(data.getSbrsCl())
+                        .thumbImage(data.getFirstImageUrl())
+                        .animalAdmission(data.getAnimalCmgCl())
+                        .createdAt(
+                                LocalDateTime.parse(
+                                        data.getCreatedtime()
+                                        , DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                        )
+                        .modifiedAt(LocalDateTime.parse(
+                                data.getModifiedtime()
+                                , DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                        )
+                        .build())
+                .toList();
+        campRepository.saveAll(list);
+    }
+
+    public void insertCampDataBySave(GoCampingDataDto goCampingDataDto) {
+        List<GoCampingParsedResponseDto> goCampingParsedResponseDtoList = parseGoCampingData(goCampingDataDto);
+
+        for (GoCampingParsedResponseDto goCampingParsedResponseDto : goCampingParsedResponseDtoList) {
+            Camp camp = buildCampFromData(goCampingParsedResponseDto);
+            campRepository.save(camp);
+        }
     }
 }

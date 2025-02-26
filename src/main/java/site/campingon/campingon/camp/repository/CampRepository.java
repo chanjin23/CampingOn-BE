@@ -49,4 +49,6 @@ public interface CampRepository extends JpaRepository<Camp, Long> {
   @Query("DELETE FROM Camp c WHERE c.id IN :ids")
   int deleteByIds(@Param("ids") List<Long> ids);
 
+  @Query("SELECT c.id FROM Camp c WHERE c.id IN :campIdList")
+  List<Long> existData(List<Long> campIdList);
 }

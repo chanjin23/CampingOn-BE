@@ -95,6 +95,77 @@ public class GoCampingController {
         return ResponseEntity.status(HttpStatus.OK).body(campImageData);
     }
 
+    @PostMapping("/jdbc")
+    public ResponseEntity<?> createCampByGoCampingBasedListByJdbc(
+            @RequestParam("numOfRows") Long numOfRows,  //한 페이지 결과 수
+            @RequestParam("pageNo") Long pageNo)    //현재 페이지 번호
+    {
+        try {
+            //공공데이터를 조회하고 반환
+            GoCampingDataDto goCampingDataDto = goCampingService.fetchCampData(
+                    GoCampingPath.BASED_LIST,
+                    "numOfRows", numOfRows.toString(),
+                    "pageNo", pageNo.toString());
+
+            //Camp 관련 엔티티를 생성하고 DB에 저장한다.
+            goCampingService.insertCampDataByJdbc(goCampingDataDto);
+
+            return ResponseEntity.status(HttpStatus.OK).build();
+        } catch (InvalidFormatException e) { //
+            log.error("고캠핑데이터 저장 실패, 고캠핑 API 파라미터나 서비스키를 다시 확인해주세요");
+            throw new GlobalException(GO_CAMPING_BAD_REQUEST);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @PostMapping("/saveAll")
+    public ResponseEntity<?> createCampByGoCampingBasedListByJpa(
+            @RequestParam("numOfRows") Long numOfRows,  //한 페이지 결과 수
+            @RequestParam("pageNo") Long pageNo)    //현재 페이지 번호
+    {
+        try {
+            //공공데이터를 조회하고 반환
+            GoCampingDataDto goCampingDataDto = goCampingService.fetchCampData(
+                    GoCampingPath.BASED_LIST,
+                    "numOfRows", numOfRows.toString(),
+                    "pageNo", pageNo.toString());
+
+            //Camp 관련 엔티티를 생성하고 DB에 저장한다.
+            goCampingService.insertCampDataByJpa(goCampingDataDto);
+
+            return ResponseEntity.status(HttpStatus.OK).build();
+        } catch (InvalidFormatException e) { //
+            log.error("고캠핑데이터 저장 실패, 고캠핑 API 파라미터나 서비스키를 다시 확인해주세요");
+            throw new GlobalException(GO_CAMPING_BAD_REQUEST);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    @PostMapping("/save")
+    public ResponseEntity<?> createCampByGoCampingBasedListSave(
+            @RequestParam("numOfRows") Long numOfRows,  //한 페이지 결과 수
+            @RequestParam("pageNo") Long pageNo)    //현재 페이지 번호
+    {
+        try {
+            //공공데이터를 조회하고 반환
+            GoCampingDataDto goCampingDataDto = goCampingService.fetchCampData(
+                    GoCampingPath.BASED_LIST,
+                    "numOfRows", numOfRows.toString(),
+                    "pageNo", pageNo.toString());
+
+            //Camp 관련 엔티티를 생성하고 DB에 저장한다.
+            goCampingService.insertCampDataBySave(goCampingDataDto);
+
+            return ResponseEntity.status(HttpStatus.OK).build();
+        } catch (InvalidFormatException e) { //
+            log.error("고캠핑데이터 저장 실패, 고캠핑 API 파라미터나 서비스키를 다시 확인해주세요");
+            throw new GlobalException(GO_CAMPING_BAD_REQUEST);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 //    //위치기반정보 목록 조회
 //    @GetMapping("/locationBasedList")
 //    public ResponseEntity<List<GoCampingParsedResponseDto>> GetGoCampingLocationBasedList(

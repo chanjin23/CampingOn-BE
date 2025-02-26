@@ -47,6 +47,7 @@ public class GoCampingProviderService {
                 PERSONAL_CARAV_SITE, data.getIndvdlCaravSiteCo()
         );
 
+        //야영지가 1이상 존재하면 Induty 테이블에 저장
         siteCounts.forEach((induty, count) -> {
             if (count != 0) {
                 CampInduty campInduty = CampInduty.builder()
