@@ -19,11 +19,9 @@ import java.time.temporal.ChronoUnit;
 @Builder(toBuilder = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "reservation", indexes = {
+@Table(name = "reservation"/*, indexes = {
         @Index(name = "idx_status", columnList = "status"),
-        @Index(name = "idx_checkin", columnList = "checkin"),
-        @Index(name = "idx_checkout", columnList = "checkout")
-})
+}*/)
 public class Reservation extends BaseEntity {
 
     @Id
@@ -46,10 +44,10 @@ public class Reservation extends BaseEntity {
     @OneToOne(mappedBy = "reservation", fetch = FetchType.EAGER)
     private Review review;
 
-    @Column(nullable = false, columnDefinition = "DATETIME(0)")
+    @Column(nullable = false, columnDefinition = "DATETIME(0)",name = "checkin")
     private LocalDateTime checkin;
 
-    @Column(nullable = false, columnDefinition = "DATETIME(0)")
+    @Column(nullable = false, columnDefinition = "DATETIME(0)",name = "checkout")
     private LocalDateTime checkout;
 
     @Column(nullable = false)

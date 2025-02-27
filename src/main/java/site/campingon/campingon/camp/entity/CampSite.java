@@ -9,10 +9,10 @@ import site.campingon.campingon.common.converter.IndutyConverter;
 @Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "camp_site", indexes = {
+@Table(name = "camp_site"/*, indexes = {
         @Index(name = "idx_is_available", columnList = "is_available"),
         @Index(name = "idx_site_type", columnList = "site_type")
-})
+}*/)
 public class CampSite {
 
     @Id
