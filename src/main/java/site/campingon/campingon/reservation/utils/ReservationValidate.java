@@ -1,6 +1,7 @@
 package site.campingon.campingon.reservation.utils;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import site.campingon.campingon.camp.entity.Camp;
 import site.campingon.campingon.camp.entity.CampSite;
@@ -8,14 +9,18 @@ import site.campingon.campingon.camp.repository.CampRepository;
 import site.campingon.campingon.camp.repository.CampSiteRepository;
 import site.campingon.campingon.common.exception.ErrorCode;
 import site.campingon.campingon.common.exception.GlobalException;
+import site.campingon.campingon.reservation.dto.ReservationCreateRequestDto;
 import site.campingon.campingon.reservation.entity.Reservation;
 import site.campingon.campingon.reservation.entity.ReservationStatus;
 import site.campingon.campingon.reservation.repository.ReservationRepository;
 import site.campingon.campingon.user.entity.User;
 import site.campingon.campingon.user.repository.UserRepository;
 
+import java.time.LocalDate;
+
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ReservationValidate {
 
     private final ReservationRepository reservationRepository;
@@ -58,6 +63,22 @@ public class ReservationValidate {
 
         if (status == ReservationStatus.COMPLETED) {
             throw new GlobalException(ErrorCode.RESERVATION_ALREADY_COMPLETE);
+        }
+    }
+
+    public void duplicateCampSite(Long campSiteId, LocalDate checkin, LocalDate checkout) {
+        if (reservationRepository.existDuplicateCampSite(campSiteId, checkin, checkout)) {
+            throw new GlobalException(ErrorCode.RESERVATION_DUPLICATE);
+        }
+    }
+
+    public void validateCheckinAndCheckout(LocalDate checkin, LocalDate checkout) {
+        //체크아웃이 체크인보다 빠른경우 or 예약날짜가 현재날짜보다 지난경우 예외처리
+        //당일 예약 불가
+//        log.info("현재 날짜 : {}", LocalDate.now());
+//        log.info("체크인 날짜 : {}", checkin);
+        if (!checkin.isBefore(checkout) || !LocalDate.now().isBefore(checkin)) {
+            throw new GlobalException(ErrorCode.RESERVATION_NOT_VALIDATE);
         }
     }
 }

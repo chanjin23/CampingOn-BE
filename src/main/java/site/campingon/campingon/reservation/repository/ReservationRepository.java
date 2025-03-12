@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import site.campingon.campingon.reservation.entity.Reservation;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -34,4 +35,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     Reservation findUpcomingReservationByUserId(@Param("userId")Long userId);
 
     List<Reservation> findByCheckin(LocalDateTime targetTime);
+
+    @Query("""
+        SELECT COUNT(r) > 0
+        FROM Reservation r
+        WHERE r.campSite.id = :campSiteId 
+          AND r.status = 'RESERVED'
+          AND DATE(r.checkout) > DATE(:checkin) 
+          AND DATE(r.checkin) < DATE(:checkout)
+    """)
+    boolean existDuplicateCampSite(@Param("campSiteId") Long campSiteId,
+                                    @Param("checkin") LocalDate checkin,
+                                    @Param("checkout") LocalDate checkout);
 }

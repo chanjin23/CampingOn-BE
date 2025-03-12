@@ -44,6 +44,8 @@ public enum ErrorCode {
     RESERVATION_ALREADY_CANCELED(HttpStatus.BAD_REQUEST, "RESERVATION-003", "이미 취소된 예약입니다."),
     RESERVATION_ALREADY_COMPLETE(HttpStatus.BAD_REQUEST, "RESERVATION-004", "이미 지난 예약입니다."),
     RESERVATION_NOT_COMPLETED_FOR_REVIEW(HttpStatus.BAD_REQUEST, "RESERVATION-005", "후기는 체크인이 완료된 상태에서만 작성할 수 있습니다."),
+    RESERVATION_DUPLICATE(HttpStatus.BAD_REQUEST, "RESERVATION_006", "누군가 해당 캠핑지를 예약한상태입니다."),
+    RESERVATION_NOT_VALIDATE(HttpStatus.BAD_REQUEST, "RESERVATION_007", "올바르지 않은 데이터 요청입니다."),
 
     BOOKMARK_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "BOOKMARK-001", "북유찾없"),
     FORBIDDEN_ACCESS(HttpStatus.FORBIDDEN, "미완", "잘못된 접근입니다."),
@@ -59,12 +61,12 @@ public enum ErrorCode {
 
     // 키워드 찾을 수 없음
     KEYWORD_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "KEYWORD-001", "키워드는 최대 5개까지만 등록 가능합니다."),
-  
+
     GO_CAMPING_BAD_REQUEST(HttpStatus.BAD_REQUEST, "GOCAMPING-001", "잘못된 고캠핑 데이터 요청입니다."),
     GO_CAMPING_IMAGE_BAD_REQUEST(HttpStatus.BAD_REQUEST, "GOCAMPING-002", "DB에 저장된 캠프가 없거나 잘못된 데이터 요청입니다."),
-    GO_CAMPING_DATA_NO_CONTENT(HttpStatus.NO_CONTENT,"GOCAMPING-003","요청하신 응답은 데이터가 없습니다."),
-    GO_CAMPING_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"GOCAMPING-004","고캠핑서비스에서 서버오류가발생했습니다."),
-    GO_CAMPING_DATA_MAPPING_ERROR(HttpStatus.BAD_REQUEST,"GOCAMPING-005","데이터의 Json 매핑이 잘못됐습니다."),
+    GO_CAMPING_DATA_NO_CONTENT(HttpStatus.NO_CONTENT, "GOCAMPING-003", "요청하신 응답은 데이터가 없습니다."),
+    GO_CAMPING_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "GOCAMPING-004", "고캠핑서비스에서 서버오류가발생했습니다."),
+    GO_CAMPING_DATA_MAPPING_ERROR(HttpStatus.BAD_REQUEST, "GOCAMPING-005", "데이터의 Json 매핑이 잘못됐습니다."),
     GO_CAMPING_NETWORK_ERROR(HttpStatus.BAD_REQUEST, "GOCAMPING-006", "고캠핑 네트워크 오류입니다.");
 
 
