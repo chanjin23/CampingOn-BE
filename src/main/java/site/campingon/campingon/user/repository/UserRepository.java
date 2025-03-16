@@ -1,7 +1,10 @@
 package site.campingon.campingon.user.repository;
 
 import java.util.Optional;
+
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import site.campingon.campingon.user.entity.User;
@@ -29,4 +32,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 이메일 중복 확인
     boolean existsByEmailAndDeletedAtIsNull(String email);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM User u WHERE u.id= :userId")
+    Optional<User> findPessimisticById(@Param("userId") Long userId);
 }
