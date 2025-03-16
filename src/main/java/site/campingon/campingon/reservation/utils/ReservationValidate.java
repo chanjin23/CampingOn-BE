@@ -3,13 +3,13 @@ package site.campingon.campingon.reservation.utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import site.campingon.campingon.camp.entity.Camp;
 import site.campingon.campingon.camp.entity.CampSite;
 import site.campingon.campingon.camp.repository.CampRepository;
 import site.campingon.campingon.camp.repository.CampSiteRepository;
 import site.campingon.campingon.common.exception.ErrorCode;
 import site.campingon.campingon.common.exception.GlobalException;
-import site.campingon.campingon.reservation.dto.ReservationCreateRequestDto;
 import site.campingon.campingon.reservation.entity.Reservation;
 import site.campingon.campingon.reservation.entity.ReservationStatus;
 import site.campingon.campingon.reservation.repository.ReservationRepository;
@@ -38,19 +38,19 @@ public class ReservationValidate {
 
     public User validateUserById(Long userId) {
 
-        return userRepository.findById(userId)
+        return userRepository.findPessimisticById(userId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.USER_NOT_FOUND_BY_ID));
     }
 
     public CampSite validateCampSiteById(Long campSiteId) {
 
-        return campSiteRepository.findById(campSiteId)
+        return campSiteRepository.findPessimisticById(campSiteId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.CAMPSITE_NOT_FOUND_BY_ID));
     }
 
     public Camp validateCampById(Long campId) {
 
-        return campRepository.findById(campId)
+        return campRepository.findPessimisticById(campId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.CAMP_NOT_FOUND_BY_ID));
     }
 
@@ -66,8 +66,10 @@ public class ReservationValidate {
         }
     }
 
+    @Transactional
     public void duplicateCampSite(Long campSiteId, LocalDate checkin, LocalDate checkout) {
-        if (reservationRepository.existDuplicateCampSite(campSiteId, checkin, checkout)) {
+        //동일한 캠핑지에 이미 예약한 데이터가 존재한다면 예외처리
+        if (reservationRepository.existDuplicateCampSite(campSiteId, checkin, checkout).isPresent()) {
             throw new GlobalException(ErrorCode.RESERVATION_DUPLICATE);
         }
     }

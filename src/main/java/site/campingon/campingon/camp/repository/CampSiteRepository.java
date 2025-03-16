@@ -1,6 +1,8 @@
 package site.campingon.campingon.camp.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -55,5 +57,7 @@ public interface CampSiteRepository extends JpaRepository<CampSite, Long> {
   List<CampSite> findAvailableCampSites(@Param("campId") Long campId,
                                         @Param("checkin") LocalDateTime checkin,
                                         @Param("checkout") LocalDateTime checkout);
-
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT cs FROM CampSite cs WHERE cs.id= :campSiteId")
+  Optional<CampSite> findPessimisticById(@Param("campSiteId") Long campSiteId);
 }
